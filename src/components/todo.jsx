@@ -1,67 +1,115 @@
 import { useState, useEffect } from 'react';
-import { MdDeleteForever } from "react-icons/md";
+import { MdDeleteForever, MdOutlineClearAll } from "react-icons/md";
 import { FaEdit } from "react-icons/fa";
+import confetti from 'canvas-confetti';
 
 function TodoApp() {
-  // 1. State for todos - initialized from localStorage
+  // --- 1. PERSISTENT STATES (Load from LocalStorage) ---
   const [todos, setTodos] = useState(() => {
     const saved = localStorage.getItem("my_todos");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 2. State for reminder toggle - initialized from localStorage
   const [remindersEnabled, setRemindersEnabled] = useState(() => {
     const saved = localStorage.getItem("reminders_active");
     return saved === "true";
   });
 
+  const [reminderTime, setReminderTime] = useState(() => {
+    const saved = localStorage.getItem("reminder_interval");
+    return saved ? parseFloat(saved) : 120;
+  });
+
+  // --- 2. UI & EDIT STATES ---
   const [inputValue, setInputValue] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
-  // EFFECT: Save todos to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("my_todos", JSON.stringify(todos));
+  // --- 3. CALCULATIONS (Progress Bar) ---
+  const totalTasks = todos.length;
+  const completedTasks = todos.filter(t => t.isCompleted).length;
+  const progressPercentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+  // --- 4. PERSISTENCE EFFECTS (Save to LocalStorage) ---
+  useEffect(() => { 
+    localStorage.setItem("my_todos", JSON.stringify(todos)); 
   }, [todos]);
 
-  // EFFECT: Save reminder preference
-  useEffect(() => {
-    localStorage.setItem("reminders_active", remindersEnabled);
+  useEffect(() => { 
+    localStorage.setItem("reminders_active", remindersEnabled); 
   }, [remindersEnabled]);
 
-  // EFFECT: Notification Logic (Checks every 10 minutes)
-  useEffect(() => {
-    if (!remindersEnabled) return;
+  useEffect(() => { 
+    localStorage.setItem("reminder_interval", reminderTime); 
+  }, [reminderTime]);
 
-    if (Notification.permission === "default") {
-      Notification.requestPermission();
+  // --- 5. CONFETTI TRIGGER ---
+  useEffect(() => {
+    if (progressPercentage === 100 && totalTasks > 0) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#10b981', '#f59e0b']
+      });
     }
+  }, [progressPercentage, totalTasks]);
+
+  // --- 6. NOTIFICATION & SOUND LOGIC ---
+  useEffect(() => {
+    if (!remindersEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
 
     const reminderInterval = setInterval(() => {
-      const incompleteTasks = todos.filter(todo => !todo.isCompleted);
-      
-      if (incompleteTasks.length > 0 && Notification.permission === "granted") {
-        new Notification("To-do Reminder", {
-          body: `You still have ${incompleteTasks.length} tasks to finish!`,
+      const incomplete = todos.filter(t => !t.isCompleted);
+      if (incomplete.length > 0) {
+        // Play Sound
+        const audio = new Audio("https://assets.mixkit.co");
+        audio.play().catch(() => console.log("Sound blocked by browser"));
+        
+        // Show Notification
+        new Notification("To-do Reminder", { 
+          body: `You still have ${incomplete.length} tasks to finish!`,
           icon: "https://cdn-icons-png.flaticon.com"
         });
       }
-    }, 120 * 60 * 1000); // 10 minutes
+    }, reminderTime * 60 * 1000);
 
     return () => clearInterval(reminderInterval);
-  }, [todos, remindersEnabled]);
+  }, [todos, remindersEnabled, reminderTime]);
+
+  // --- 7. ACTION HANDLERS ---
+  const handleToggleReminders = () => {
+    if (!remindersEnabled) {
+      Notification.requestPermission().then(res => { 
+        if (res === "granted") setRemindersEnabled(true); 
+        else alert("Please enable notifications in your browser settings.");
+      });
+    } else { 
+      setRemindersEnabled(false); 
+    }
+  };
+
+  const addTodo = () => {
+    if (inputValue.trim() !== "") {
+      setTodos([...todos, { id: Date.now(), text: inputValue, isCompleted: false }]);
+      setInputValue("");
+    }
+  };
 
   const deleteTodo = (id) => {
-    const updated = todos.filter(todo => todo.id !== id);
-    setTodos(updated);
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  const clearAll = () => {
+    if (window.confirm("Delete all tasks?")) {
+      setTodos([]);
+    }
   };
 
   const toggleComplete = (id) => {
-    const updated = todos.map(todo => {
-      if(todo.id === id) return {...todo, isCompleted: !todo.isCompleted};
-      return todo;
-    });
-    setTodos(updated);
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+    ));
   };
 
   const startEdit = (id) => {
@@ -71,93 +119,155 @@ function TodoApp() {
   };
 
   const saveEdit = () => {
-    const updated = todos.map(todo => {
-      if(todo.id === editingId) return {...todo, text: editValue};
-      return todo;
-    });
-    setTodos(updated);
+    setTodos(todos.map(todo => 
+      todo.id === editingId ? { ...todo, text: editValue } : todo
+    ));
     setEditingId(null);
     setEditValue("");
-  };
-
-  const addTodo = () => {
-    if (inputValue.trim() !== "") {
-      const newTodo = { id: Date.now(), text: inputValue, isCompleted: false };
-      setTodos([...todos, newTodo]);
-      setInputValue("");
-    }
   };
 
   const today = new Date().toLocaleDateString('en-CA');
 
   return (
-    <div className='group'>
-      <h1 className='text-center font-[cursive] text-9xl transition-all duration-1000 underline decoration-transparent decoration-wavy underline-offset-10 hover:decoration-black'>
+    <div className='min-h-screen bg-gray-50 p-4 font-sans text-gray-900'>
+      <h1 className='text-center text-5xl md:text-8xl font-black tracking-tighter mt-10 mb-4'>
         To-do List
       </h1>
 
-      <div className='m-20 bg-white p-10 rounded-2xl flex-2'>
-        <h1 className='font-[cursive]'>Awesome Todo List</h1>
-        <p className='font-[cursive]'>Date: {today}</p>
-
-        {/* Reminder Toggle UI */}
-        <div className="flex items-center justify-end gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
-          <span className="font-[cursive] text-sm text-gray-600">
-            {remindersEnabled ? "Reminders ON" : "Reminders OFF"}
-          </span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer" 
-              checked={remindersEnabled}
-              onChange={() => setRemindersEnabled(!remindersEnabled)} 
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+      <div className='max-w-xl mx-auto my-10 bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden'>
+        
+        {/* PROGRESS BAR */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+          <div 
+            className="h-full bg-blue-500 transition-all duration-700 ease-in-out" 
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
         </div>
 
-        <div className='flex gap-2 mb-4'>
+        <div className="flex justify-between items-end mb-6 pt-2">
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight'>My Tasks</h2>
+            <p className='text-[10px] font-black text-gray-400 uppercase tracking-widest'>Date: {today}</p>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-black text-blue-600">{progressPercentage}%</span>
+          </div>
+        </div>
+
+        {/* SETTINGS PANEL */}
+        <div className="my-6 p-4 bg-gray-50 rounded-2xl flex items-center justify-between border border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${remindersEnabled ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'}`}>
+              Reminders {remindersEnabled ? "ON" : "OFF"}
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={remindersEnabled} 
+                onChange={handleToggleReminders} 
+              />
+              <div className="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase">Notify Every:</label>
+            <select 
+              value={reminderTime} 
+              onChange={(e) => setReminderTime(Number(e.target.value))} 
+              className="text-xs font-bold p-1 rounded border outline-none bg-white cursor-pointer"
+            >
+              <option value="0.16">10 Secs (Test)</option>
+              <option value="60">1 Hour</option>
+              <option value="120">2 Hours</option>
+            </select>
+          </div>
+        </div>
+
+        {/* INPUT FIELD */}
+        <div className='flex gap-2 mb-8'>
           <input 
             value={inputValue} 
             onChange={(e) => setInputValue(e.target.value)} 
-            placeholder="Add a task..."
-            className='border-2 border-gray-300 rounded-md w-full pl-2'
+            placeholder="What's the plan?" 
+            className='border-2 border-gray-100 bg-gray-50 rounded-xl w-full px-4 py-3 outline-none focus:border-blue-500 transition-all font-medium' 
+            onKeyDown={(e) => e.key === 'Enter' && addTodo()} 
           />
-          <button onClick={addTodo} className='bg-blue-700 rounded-2xl text-white p-2 sm:p-6 cursor-pointer'>Add</button>
+          <button 
+            onClick={addTodo} 
+            className='bg-blue-600 rounded-xl text-white px-6 font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 active:scale-95 transition-all cursor-pointer'
+          >
+            ADD
+          </button>
         </div>
 
-        <ul>
+        {/* TASK LIST */}
+        <ul className="space-y-3">
           {todos.map(todo => (
-            <li key={todo.id} className='flex justify-between mb-2'>
-              <div className='flex gap-2 items-center'>
-                <input type="checkbox" className='cursor-pointer' id={todo.id} checked={todo.isCompleted} onChange={() => toggleComplete(todo.id)} />
+            <li key={todo.id} className='flex justify-between items-center bg-white p-2 rounded-xl border border-transparent hover:border-gray-50 transition-colors'>
+              <div className='flex gap-4 items-center flex-1'>
+                <input 
+                  type="checkbox" 
+                  className='w-5 h-5 cursor-pointer accent-blue-600' 
+                  checked={todo.isCompleted} 
+                  onChange={() => toggleComplete(todo.id)} 
+                />
                 {editingId === todo.id ? (
                   <input 
                     value={editValue} 
                     onChange={(e) => setEditValue(e.target.value)} 
-                    className='border-2 border-gray-300 rounded-md pl-2 flex-1'
+                    className='border-b-2 border-blue-500 flex-1 outline-none text-lg font-medium' 
+                    autoFocus 
+                    onKeyDown={(e) => e.key === 'Enter' && saveEdit()} 
                   />
                 ) : (
-                  <label htmlFor={todo.id} className={`font-[cursive] ${todo.isCompleted ? 'line-through opacity-50' : ''}`}>{todo.text}</label>
+                  <span className={`text-lg font-medium transition-all ${todo.isCompleted ? 'line-through text-gray-300' : 'text-gray-700'}`}>
+                    {todo.text}
+                  </span>
                 )}
               </div>
-              <div className='flex items-center'>
+              
+              <div className='flex items-center gap-3 ml-4'>
                 {editingId === todo.id ? (
-                  <button onClick={saveEdit} className='text-green-600 cursor-pointer mr-2'>Save</button>
+                  <button 
+                    onClick={saveEdit} 
+                    className='text-blue-600 font-black text-xs px-2 cursor-pointer hover:bg-blue-50 py-1 rounded'
+                  >
+                    SAVE
+                  </button>
                 ) : (
-                  <FaEdit onClick={() => startEdit(todo.id)} className='text-green-600 size-7 cursor-pointer mr-2' />
+                  <FaEdit 
+                    onClick={() => startEdit(todo.id)} 
+                    className='text-green-600 size-5 cursor-pointer hover:scale-110 transition-transform' 
+                  />
                 )}
-                <MdDeleteForever onClick={() => deleteTodo(todo.id)} className='text-red-600 size-7 cursor-pointer'/>
+                <MdDeleteForever 
+                  onClick={() => deleteTodo(todo.id)} 
+                  className='text-red-600 size-6 cursor-pointer hover:scale-110 transition-transform'
+                />
               </div>
             </li>
           ))}
         </ul>
+
+        {/* CLEAR ALL BUTTON */}
+        {totalTasks > 0 ? (
+          <button 
+            onClick={clearAll} 
+            className="mt-8 w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase text-red-400 hover:text-red-600 transition-colors cursor-pointer tracking-widest border-t border-gray-50 pt-4"
+          >
+            <MdOutlineClearAll size={18} /> Clear All Tasks
+          </button>
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-300 font-bold uppercase tracking-widest text-xs italic">Your list is empty</p>
+          </div>
+        )}
       </div>
 
-      <footer>
-        <p className='text-center font-[cursive] text-2xl text-gray-500'>
-          Made by <a href="https://github.com/Israel122-lab" target="_blank" rel="noopener noreferrer" className='text-gray-600 hover:underline'>Israel Olajide</a>
-        </p>
+      <footer className="mt-auto text-center text-[10px] font-black text-gray-400 pb-10 uppercase tracking-widest">
+        Made by <a href="https://github.com" target="_blank" rel="noopener noreferrer" className='text-blue-400 hover:underline'>Israel Olajide</a>
       </footer>
     </div>
   );
