@@ -46,7 +46,7 @@ function TodoApp() {
           icon: "https://cdn-icons-png.flaticon.com"
         });
       }
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 120 * 60 * 1000); // 10 minutes
 
     return () => clearInterval(reminderInterval);
   }, [todos, remindersEnabled]);
