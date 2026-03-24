@@ -107,6 +107,11 @@ function TodoApp() {
       </ul>
      
     </div>
+
+    <footer>
+
+      <p className='text-center font-[cursive] text-2xl text-gray-500'>Made by <a href="https://github.com/Israel122-lab" target="_blank" rel="noopener noreferrer" className='text-gray-600 hover:underline'>Israel Olajide</a></p>
+    </footer>
     </div>
     
   );
