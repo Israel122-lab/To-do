@@ -38,5 +38,15 @@
 
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+   <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(() => {
+        // This ensures the service worker is ready to receive messages immediately
+        return navigator.serviceWorker.ready;
+      });
+    });
+  }
+</script>
   </body>
 </html>

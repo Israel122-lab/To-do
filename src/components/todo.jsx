@@ -60,27 +60,19 @@ function TodoApp() {
     }
   }, [progressPercentage, totalTasks]);
 
-  // --- 6. NOTIFICATION & SOUND LOGIC ---
-  useEffect(() => {
-    if (!remindersEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
-
-    const reminderInterval = setInterval(() => {
-      const incomplete = todos.filter(t => !t.isCompleted);
-      if (incomplete.length > 0) {
-        // Play Sound
-        const audio = new Audio("https://assets.mixkit.co");
-        audio.play().catch(() => console.log("Sound blocked by browser"));
-        
-        // Show Notification
-        new Notification("To-do Reminder", { 
-          body: `You still have ${incomplete.length} tasks to finish!`,
-          icon: "https://cdn-icons-png.flaticon.com"
-        });
-      }
-    }, reminderTime * 60 * 1000);
-
-    return () => clearInterval(reminderInterval);
-  }, [todos, remindersEnabled, reminderTime]);
+  // --- 6. BACKGROUND REMINDER LOGIC ---
+useEffect(() => {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    if (remindersEnabled && totalTasks > completedTasks) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'START_REMINDER',
+        interval: reminderTime
+      });
+    } else {
+      navigator.serviceWorker.controller.postMessage({ type: 'STOP_REMINDER' });
+    }
+  }
+}, [remindersEnabled, reminderTime, totalTasks, completedTasks]);
 
   // --- 7. ACTION HANDLERS ---
   const handleToggleReminders = () => {
