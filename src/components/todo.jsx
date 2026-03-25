@@ -6,6 +6,7 @@ import { FaGithub } from "react-icons/fa";
 import { FaLinkedin } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import { FaWhatsapp } from 'react-icons/fa';
+import { Analytics } from "@vercel/analytics/react"
 
 function TodoApp() {
   // --- 1. PERSISTENT STATES (Load from LocalStorage) ---
@@ -134,6 +135,8 @@ function TodoApp() {
 
   return (
     <div className='min-h-screen bg-gray-50 p-4 font-sans text-gray-900'>
+
+      <Analytics />
       <h1 className='text-center text-5xl md:text-8xl font-black tracking-tighter mt-10 mb-4'>
         To-do List
       </h1>
