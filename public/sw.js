@@ -24,7 +24,8 @@ self.addEventListener('message', (event) => {
         icon: "/logo192.png",
         badge: "/logo192.png", // Small icon for the Android status bar
         vibrate: [200, 100, 200],
-        tag: 'todo-reminder' // Prevents multiple notification stacks
+        tag: 'todo-reminder', // Prevents multiple notification stacks
+        renotify: true 
       });
     }, minutes * 60 * 1000);
   }
@@ -32,4 +33,26 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'STOP_REMINDER') {
     clearInterval(self.reminderTimer);
   }
+});
+
+// This listens for when the user CLICKS the notification
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Close the notification immediately
+
+  // This tells the browser to open the app or focus the tab if it's already open
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        let client = clientList[0];
+        for (let i = 0; i < clientList.length; i++) {
+          if (clientList[i].focused) {
+            client = clientList[i];
+          }
+        }
+        return client.focus();
+      }
+      // If the app isn't open at all, launch it
+      return clients.openWindow('/');
+    })
+  );
 });
