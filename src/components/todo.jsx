@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { MdDeleteForever, MdOutlineClearAll } from "react-icons/md";
 import { FaEdit } from "react-icons/fa";
 import confetti from 'canvas-confetti';
+import { FaGithub } from "react-icons/fa";
+import { FaLinkedin } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
+import { FaWhatsapp } from 'react-icons/fa';
 
 function TodoApp() {
   // --- 1. PERSISTENT STATES (Load from LocalStorage) ---
@@ -267,7 +271,48 @@ function TodoApp() {
       </div>
 
       <footer className="mt-auto text-center text-[10px] font-black text-gray-400 pb-10 uppercase tracking-widest">
-        Made by <a href="https://github.com" target="_blank" rel="noopener noreferrer" className='text-blue-400 hover:underline'>Israel Olajide</a>
+        Made by <a href="" target="_blank" rel="noopener noreferrer" className='text-blue-400 hover:underline'>Israel Olajide</a>
+
+        <div className="flex justify-center items-center gap-6">
+          <a 
+            href="https://github.com/Israel122-lab" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-gray-900 transition-all transform hover:scale-110"
+            title="GitHub"
+          >
+            <FaGithub size={18} />
+          </a>
+
+          <a 
+            href="https://linkedin.com/in/israel-olajide-77b97036a?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-blue-600 transition-all transform hover:scale-110"
+            title="LinkedIn"
+          >
+            <FaLinkedin size={18} />
+          </a>
+
+          <a 
+          href="https://wa.me/2348166198180?text=Hi%20Israel!%20I%27m%20reaching%20out%20from%20your%20To-do%20List%20app..." // Replace with your number in international format
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-400 hover:text-[#25D366] transition-all transform hover:scale-110"
+          title="Chat on WhatsApp"
+          >
+            <FaWhatsapp size={20} />
+          </a>
+
+          <a 
+            href="mailto:israelolajide51@gmail.com" 
+            className="text-gray-400 hover:text-red-500 transition-all transform hover:scale-110"
+            title="Email Me"
+          >
+            <MdEmail size={20} />
+          </a>
+
+        </div>
       </footer>
     </div>
   );
