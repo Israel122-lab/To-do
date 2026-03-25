@@ -1,12 +1,11 @@
 import { useState } from "react";
 
-const [show, setShow] = useState();
+function Calc() {
+  const [show, setShow] = useState();
   const [inputv, setInputv] = useState("");
   const [inputs, setInputs] = useState("");
-
-  return (
-    
-   
+  
+  return (  
     <div className='text-center '>
       <h1 className='text-3xl font-bold mb-4'>Mini - Calculator</h1>
 
@@ -58,3 +57,5 @@ const [show, setShow] = useState();
 
     </div>
   );
+}
+export default Calc;
