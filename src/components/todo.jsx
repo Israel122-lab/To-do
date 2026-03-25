@@ -62,17 +62,17 @@ function TodoApp() {
 
   // --- 6. TALK TO THE BACKGROUND SERVICE WORKER ---
 useEffect(() => {
-  // Check if the browser supports Service Workers and one is active
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    
-    // Logic: If reminders are ON and there are still tasks left to do...
+    // If reminders are ON and tasks aren't finished...
     if (remindersEnabled && totalTasks > completedTasks) {
+      console.log("Sending START_REMINDER to Worker");
       navigator.serviceWorker.controller.postMessage({
         type: 'START_REMINDER',
         interval: reminderTime
       });
     } else {
-      // If reminders are OFF or all tasks are DONE, tell the worker to stop
+      // Otherwise, kill the timer
+      console.log("Sending STOP_REMINDER to Worker");
       navigator.serviceWorker.controller.postMessage({ type: 'STOP_REMINDER' });
     }
   }
