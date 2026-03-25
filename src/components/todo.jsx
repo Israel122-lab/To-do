@@ -186,8 +186,22 @@ function TodoApp() {
               className="text-xs font-bold p-1 rounded border outline-none bg-white cursor-pointer"
             >
               <option value="0.16">10 Secs (Test)</option>
+              <option value="5">5 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
               <option value="60">1 Hour</option>
               <option value="120">2 Hours</option>
+              <option value="180">3 Hours</option>
+              <option value="240">4 Hours</option>
+              <option value="300">5 Hours</option>
+              <option value="360">6 Hours</option>
+              <option value="420">7 Hours</option>
+              <option value="480">8 Hours</option>
+              <option value="540">9 Hours</option>
+              <option value="600">10 Hours</option>
+              <option value="660">11 Hours</option>
+              <option value="720">12 Hours</option>
+              <option value="1440">24 Hours</option>
             </select>
           </div>
         </div>
