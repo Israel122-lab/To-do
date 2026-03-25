@@ -60,15 +60,19 @@ function TodoApp() {
     }
   }, [progressPercentage, totalTasks]);
 
-  // --- 6. BACKGROUND REMINDER LOGIC ---
+  // --- 6. TALK TO THE BACKGROUND SERVICE WORKER ---
 useEffect(() => {
+  // Check if the browser supports Service Workers and one is active
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    
+    // Logic: If reminders are ON and there are still tasks left to do...
     if (remindersEnabled && totalTasks > completedTasks) {
       navigator.serviceWorker.controller.postMessage({
         type: 'START_REMINDER',
         interval: reminderTime
       });
     } else {
+      // If reminders are OFF or all tasks are DONE, tell the worker to stop
       navigator.serviceWorker.controller.postMessage({ type: 'STOP_REMINDER' });
     }
   }
