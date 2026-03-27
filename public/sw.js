@@ -1,7 +1,6 @@
 // public/sw.js
-let timerId = null;
 
-// 1. Immediate activation
+// 1. Immediate activation (Keep this)
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -10,57 +9,51 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// 2. The Recursive Timer Function
-// This is better than setInterval because it "re-registers" the task with the browser
-function startBackgroundTimer(minutes) {
-  if (timerId) clearTimeout(timerId);
+// 2. THE PUSH LISTENER (The Heart of the Full-Stack version)
+// This listens for the message sent by web-push from your Server/Cron Job
+self.addEventListener('push', (event) => {
+  let data = { title: "To-do List", body: "Don't forget your tasks!" };
 
-  const ms = minutes * 60 * 1000;
-
-  timerId = setTimeout(() => {
-    // Show the notification
-    self.registration.showNotification("To-do Reminder", {
-      body: "Don't forget your tasks! Tap to check your list.",
-      icon: "/logo192.png",
-      badge: "/logo192.png",
-      vibrate: [200, 100, 200],
-      tag: 'todo-reminder', // Keeps notifications from stacking up
-      renotify: true,
-      data: { url: '/' }
-    });
-
-    // Loop: Start the next countdown
-    startBackgroundTimer(minutes);
-  }, ms);
-}
-
-// 3. Listen for messages from React
-self.addEventListener('message', (event) => {
-  if (event.data.type === 'START_REMINDER') {
-    console.log(`Setting background timer for ${event.data.interval} minutes`);
-    startBackgroundTimer(event.data.interval);
-  }
-
-  if (event.data.type === 'STOP_REMINDER') {
-    console.log("Stopping background timer");
-    if (timerId) {
-      clearTimeout(timerId);
-      timerId = null;
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      // Fallback if the server sends plain text instead of JSON
+      data = { title: "To-do List", body: event.data.text() };
     }
   }
+
+  const options = {
+    body: data.body,
+    icon: "/logo192.png", // Make sure this file exists in your public folder!
+    badge: "/logo192.png",
+    vibrate: [200, 100, 200],
+    tag: 'todo-reminder',
+    renotify: true,
+    data: { url: '/' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
 });
 
-// 4. Handle Notification Clicks
+// 3. Handle Notification Clicks (Keep this)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  // Bring the user back to the app
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        return clientList[0].focus();
+      // If the app is already open, just focus it
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
       }
-      return clients.openWindow('/');
+      // If not open, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
     })
   );
 });
