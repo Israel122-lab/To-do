@@ -4,6 +4,7 @@ import { FaEdit, FaGithub, FaLinkedin, FaWhatsapp } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import confetti from 'canvas-confetti';
 import { Analytics } from "@vercel/analytics/react";
+const API_BASE_URL = "https://israel-todo-api-backend.onrender.com";
 
 // --- HELPER: CONVERT PUBLIC VAPID KEY ---
 const urlBase64ToUint8Array = (base64String) => {
@@ -71,7 +72,7 @@ function TodoApp() {
         });
 
         // Send to your Node server
-        await fetch('http://localhost:5000/api/notifications/subscribe', {
+        await fetch(`${API_BASE_URL}/api/notifications/subscribe`, {
           method: 'POST',
           body: JSON.stringify({
             subscription: subscription,
@@ -108,7 +109,7 @@ function TodoApp() {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
-          await fetch('http://localhost:5000/api/notifications/unsubscribe', {
+          await fetch(`${API_BASE_URL}/api/notifications/unsubscribe`, {
             method: 'POST',
             body: JSON.stringify({ endpoint: subscription.endpoint }),
             headers: { 'Content-Type': 'application/json' }
